@@ -97,6 +97,9 @@ class LudoWorld extends World {
   int rollCont = 0;
   bool passToNextPlayer = false;
   Color diceFreeColor = const Color.fromARGB(255, 165, 248, 171);
+  List<int> currentResults = <int>[];
+  bool isFirstSix = false;
+  int rollResult = 0;
 
   LudoWorld() {
     // Initialiser diceBox avec une référence à this
@@ -208,23 +211,25 @@ class LudoWorld extends World {
       changePlayer();
       diceBox.paint = Paint()..color = diceFreeColor;
       passToNextPlayer = false;
+      rollCont = 0;
     } else {
-      simulateRollAnimation();
-      int rollResult = random.nextInt(possibleDiceValues) + 1;
+      rollResult = simulateRollAnimation();
       diceText.text = (rollResult).toString();
-      if (rollResult == 6) {
-        isFirstMoveDone = true;
+
+      if (isFirstMoveDone) {
+        enterTheMainRules(rollResult);
       } else {
-        if (!isFirstMoveDone) {
-          rollCont++;
+        if (rollCont == 1 && rollResult != 6) {
+          passToNextPlayer = true;
+          diceBox.paint = Paint()..color = Colors.red;
+        } else {
+          if (rollResult == 6) {
+            enterTheMainRules(rollResult);
+            isFirstMoveDone = true;
+          } else {
+            rollCont++;
+          }
         }
-      }
-      if (rollCont == 2) {
-        passToNextPlayer = true;
-        rollCont = 0;
-      }
-      if (passToNextPlayer) {
-        diceBox.paint = Paint()..color = Colors.red;
       }
     }
   }
@@ -239,13 +244,14 @@ class LudoWorld extends World {
 
   void movePiece(Piece piece) {}
 
-  void simulateRollAnimation() {
+  int simulateRollAnimation() {
     for (var i = 0; i < 10; i++) {
-      Future.delayed(Duration(milliseconds: 50 * i), () {
-        diceText.text = (random.nextInt(possibleDiceValues) + 1).toString();
-      });
+      diceText.text = (random.nextInt(possibleDiceValues) + 1).toString();
     }
+    return random.nextInt(possibleDiceValues) + 1;
   }
+
+  void enterTheMainRules(int rollResult) {}
 }
 
 class MyGame extends FlameGame {
