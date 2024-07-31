@@ -80,10 +80,12 @@ class LudoWorld extends World {
   final double diceBoxSize = 50.0;
   final Random random = Random();
   final List<Vector2> diceBoxPositions = <Vector2>[];
-  List<Piece> redPlayerPieces = <Piece>[];
-  List<Piece> bluePlayerPieces = <Piece>[];
-  List<Piece> greenPlayerPieces = <Piece>[];
-  List<Piece> yellowPlayerPieces = <Piece>[];
+  Map<int, List<Piece>> playersMap = {
+    1: <Piece>[],
+    2: <Piece>[],
+    3: <Piece>[],
+    4: <Piece>[],
+  };
   List<Tuple<double, double>> scale = <Tuple<double, double>>[
     Tuple(4.55, 3.5),
     Tuple(3.55, 2.9),
@@ -97,9 +99,11 @@ class LudoWorld extends World {
   int rollCont = 0;
   bool passToNextPlayer = false;
   Color diceFreeColor = const Color.fromARGB(255, 165, 248, 171);
+  Color diceNotFreeColor = Color.fromARGB(255, 221, 114, 14);
   List<int> currentResults = <int>[];
   bool isFirstSix = false;
   int rollResult = 0;
+  bool canPlay = true;
 
   LudoWorld() {
     // Initialiser diceBox avec une référence à this
@@ -108,29 +112,29 @@ class LudoWorld extends World {
       anchor: Anchor.center,
       color: diceFreeColor,
     );
-    redPlayerPieces = <Piece>[
+    playersMap[1] = <Piece>[
       Piece(spritePath: 'red_piece.png', ludoWorld: this),
       Piece(spritePath: 'red_piece.png', ludoWorld: this),
       Piece(spritePath: 'red_piece.png', ludoWorld: this),
       Piece(spritePath: 'red_piece.png', ludoWorld: this),
     ];
-    bluePlayerPieces = <Piece>[
+    playersMap[2] = <Piece>[
       Piece(spritePath: 'blue_piece.png', ludoWorld: this),
       Piece(spritePath: 'blue_piece.png', ludoWorld: this),
       Piece(spritePath: 'blue_piece.png', ludoWorld: this),
       Piece(spritePath: 'blue_piece.png', ludoWorld: this),
     ];
-    greenPlayerPieces = <Piece>[
-      Piece(spritePath: 'green_piece.png', ludoWorld: this),
-      Piece(spritePath: 'green_piece.png', ludoWorld: this),
-      Piece(spritePath: 'green_piece.png', ludoWorld: this),
-      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+    playersMap[3] = <Piece>[
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
     ];
-    yellowPlayerPieces = <Piece>[
-      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
-      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
-      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
-      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+    playersMap[4] = <Piece>[
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
     ];
   }
 
@@ -141,10 +145,10 @@ class LudoWorld extends World {
       diceBox,
     ]);
     await diceBox.add(diceText);
-    await addAll(redPlayerPieces);
-    await addAll(bluePlayerPieces);
-    await addAll(greenPlayerPieces);
-    await addAll(yellowPlayerPieces);
+    await addAll(playersMap[1] as Iterable<Component>);
+    await addAll(playersMap[2] as Iterable<Component>);
+    await addAll(playersMap[3] as Iterable<Component>);
+    await addAll(playersMap[4] as Iterable<Component>);
   }
 
   @override
@@ -153,13 +157,13 @@ class LudoWorld extends World {
 
     // set the positions of the dice boxes
     diceBoxPositions
-        .add(Vector2(-size.x / 2 + diceBoxSize / 2 + 20, -size.x / 2 - 20));
-    diceBoxPositions
         .add(Vector2(size.x / 2 - diceBoxSize / 2 - 20, -size.x / 2 - 20));
     diceBoxPositions
         .add(Vector2(size.x / 2 - diceBoxSize / 2 - 20, size.x / 2 + 20));
     diceBoxPositions
         .add(Vector2(-size.x / 2 + diceBoxSize / 2 + 20, size.x / 2 + 20));
+    diceBoxPositions
+        .add(Vector2(-size.x / 2 + diceBoxSize / 2 + 20, -size.x / 2 - 20));
 
     board.size = Vector2(size.x, size.x);
     board.position = Vector2(0, 0);
@@ -168,33 +172,31 @@ class LudoWorld extends World {
     diceBox.position = diceBoxPositions[whoPlays - 1];
 
     for (var i = 0; i < 4; i++) {
-      redPlayerPieces[i].size =
+      playersMap[1]![i].size =
           Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
-      redPlayerPieces[i].position = Vector2(
+      playersMap[1]![i].position = Vector2(
         size.x / scale[i].x,
         -size.x / scale[i].y,
       );
-      bluePlayerPieces[i].size =
+      playersMap[2]![i].size =
           Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
-      bluePlayerPieces[i].position = Vector2(
+      playersMap[2]![i].position = Vector2(
         size.x / scale[i].x,
         size.x / scale[i].y,
       );
-      yellowPlayerPieces[i].size =
+      playersMap[3]![i].size =
           Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
-      yellowPlayerPieces[i].position = Vector2(
+      playersMap[3]![i].position = Vector2(
         -size.x / scale[i].x,
         size.x / scale[i].y,
       );
-      greenPlayerPieces[i].size =
+      playersMap[4]![i].size =
           Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
-      greenPlayerPieces[i].position = Vector2(
+      playersMap[4]![i].position = Vector2(
         -size.x / scale[i].x,
         -size.x / scale[i].y,
       );
     }
-
-    //animatePiece(redPlayerPieces[0], redPlayerPieces[0].position);
   }
 
   void animatePiece(Piece piece, Vector2 position) {
@@ -207,27 +209,29 @@ class LudoWorld extends World {
   }
 
   void rollDice() {
-    if (passToNextPlayer) {
-      changePlayer();
-      diceBox.paint = Paint()..color = diceFreeColor;
-      passToNextPlayer = false;
-      rollCont = 0;
-    } else {
-      rollResult = simulateRollAnimation();
-      diceText.text = (rollResult).toString();
-
-      if (isFirstMoveDone) {
-        enterTheMainRules(rollResult);
+    if (canPlay) {
+      if (passToNextPlayer) {
+        changePlayer();
+        diceBox.paint = Paint()..color = diceFreeColor;
+        passToNextPlayer = false;
+        rollCont = 0;
       } else {
-        if (rollCont == 1 && rollResult != 6) {
-          passToNextPlayer = true;
-          diceBox.paint = Paint()..color = Colors.red;
+        rollResult = simulateRollAnimation();
+        diceText.text = (rollResult).toString();
+
+        if (isFirstMoveDone) {
+          enterTheMainRules(rollResult);
         } else {
-          if (rollResult == 6) {
-            enterTheMainRules(rollResult);
-            isFirstMoveDone = true;
+          if (rollCont == 1 && rollResult != 6) {
+            passToNextPlayer = true;
+            diceBox.paint = Paint()..color = diceNotFreeColor;
           } else {
-            rollCont++;
+            if (rollResult == 6) {
+              enterTheMainRules(rollResult);
+              isFirstMoveDone = true;
+            } else {
+              rollCont++;
+            }
           }
         }
       }
@@ -251,7 +255,31 @@ class LudoWorld extends World {
     return random.nextInt(possibleDiceValues) + 1;
   }
 
-  void enterTheMainRules(int rollResult) {}
+  void enterTheMainRules(int rollResult) {
+    if (rollResult == 6) {
+      isFirstSix = true;
+    } else {
+      canPlay = false;
+      countForCurrentPlayer();
+      passToNextPlayer = true;
+      diceBox.paint = Paint()..color = diceNotFreeColor;
+      isFirstSix = false;
+    }
+    currentResults.add(rollResult);
+  }
+
+  void countForCurrentPlayer() {
+    for (var piece in playersMap[whoPlays]!) {
+      if (isPieceCanPlay(piece)) {
+        animatePiece(piece, piece.position);
+      }
+    }
+    canPlay = true;
+  }
+
+  bool isPieceCanPlay(Piece piece) {
+    return true;
+  }
 }
 
 class MyGame extends FlameGame {
