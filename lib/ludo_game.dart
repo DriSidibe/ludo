@@ -1,3 +1,4 @@
+import 'package:flame/effects.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
@@ -5,14 +6,19 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 
+import 'package:ludo/costum.dart';
+
 class TappableRectangle extends RectangleComponent with TapCallbacks {
-  final LudoWorld ludoWorld; // Référence à LudoWorld
+  final LudoWorld ludoWorld;
+  Color color;
 
   TappableRectangle({
     required this.ludoWorld,
     required Anchor anchor,
+    required this.color,
   }) : super(
           anchor: anchor,
+          paint: Paint()..color = color,
         );
 
   @override
@@ -34,20 +40,22 @@ class MyBoard extends SpriteComponent {
   }
 }
 
-class Piece extends SpriteComponent {
+class Piece extends SpriteComponent with TapCallbacks {
   String spritePath;
-  Vector2 position_;
-  Vector2 size_;
+  final LudoWorld ludoWorld;
 
   Piece({
+    required this.ludoWorld,
     required this.spritePath,
-    required this.position_,
-    required this.size_,
   }) : super(
           anchor: Anchor.center,
-          position: position_,
-          size: size_,
         );
+
+  @override
+  void onTapUp(TapUpEvent event) {
+    // Appeler la méthode de LudoWorld lorsque le rectangle est tapé
+    ludoWorld.movePiece(this);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -76,100 +84,50 @@ class LudoWorld extends World {
   List<Piece> bluePlayerPieces = <Piece>[];
   List<Piece> greenPlayerPieces = <Piece>[];
   List<Piece> yellowPlayerPieces = <Piece>[];
+  List<Tuple<double, double>> scale = <Tuple<double, double>>[
+    Tuple(4.55, 3.5),
+    Tuple(3.55, 2.9),
+    Tuple(2.9, 3.5),
+    Tuple(3.55, 4.5),
+  ];
+  Tuple<double, double> piecesScale = Tuple(20, 20);
+  MoveEffect selectedPieceEffect = PieceEffect(Vector2(0, 0)).selectionEffect();
+  int turn = 1;
+  bool isFirstMoveDone = false;
+  int rollCont = 0;
+  bool passToNextPlayer = false;
+  Color diceFreeColor = const Color.fromARGB(255, 165, 248, 171);
 
   LudoWorld() {
     // Initialiser diceBox avec une référence à this
     diceBox = TappableRectangle(
       ludoWorld: this,
       anchor: Anchor.center,
+      color: diceFreeColor,
     );
     redPlayerPieces = <Piece>[
-      Piece(
-        spritePath: 'red_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'red_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'red_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'red_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-    ];
-    greenPlayerPieces = <Piece>[
-      Piece(
-        spritePath: 'green_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'green_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'green_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'green_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
+      Piece(spritePath: 'red_piece.png', ludoWorld: this),
+      Piece(spritePath: 'red_piece.png', ludoWorld: this),
+      Piece(spritePath: 'red_piece.png', ludoWorld: this),
+      Piece(spritePath: 'red_piece.png', ludoWorld: this),
     ];
     bluePlayerPieces = <Piece>[
-      Piece(
-        spritePath: 'blue_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'blue_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'blue_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'blue_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
+      Piece(spritePath: 'blue_piece.png', ludoWorld: this),
+      Piece(spritePath: 'blue_piece.png', ludoWorld: this),
+      Piece(spritePath: 'blue_piece.png', ludoWorld: this),
+      Piece(spritePath: 'blue_piece.png', ludoWorld: this),
+    ];
+    greenPlayerPieces = <Piece>[
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
+      Piece(spritePath: 'green_piece.png', ludoWorld: this),
     ];
     yellowPlayerPieces = <Piece>[
-      Piece(
-        spritePath: 'yellow_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'yellow_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'yellow_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
-      Piece(
-        spritePath: 'yellow_piece.png',
-        position_: Vector2(0, 0),
-        size_: Vector2(20, 20),
-      ),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
+      Piece(spritePath: 'yellow_piece.png', ludoWorld: this),
     ];
   }
 
@@ -178,24 +136,12 @@ class LudoWorld extends World {
     await addAll(<Component>[
       board,
       diceBox,
-      redPlayerPieces[0],
-      redPlayerPieces[1],
-      redPlayerPieces[2],
-      redPlayerPieces[3],
-      bluePlayerPieces[0],
-      bluePlayerPieces[1],
-      bluePlayerPieces[2],
-      bluePlayerPieces[3],
-      greenPlayerPieces[0],
-      greenPlayerPieces[1],
-      greenPlayerPieces[2],
-      greenPlayerPieces[3],
-      yellowPlayerPieces[0],
-      yellowPlayerPieces[1],
-      yellowPlayerPieces[2],
-      yellowPlayerPieces[3],
     ]);
     await diceBox.add(diceText);
+    await addAll(redPlayerPieces);
+    await addAll(bluePlayerPieces);
+    await addAll(greenPlayerPieces);
+    await addAll(yellowPlayerPieces);
   }
 
   @override
@@ -218,30 +164,69 @@ class LudoWorld extends World {
     diceBox.size = Vector2(diceBoxSize, diceBoxSize);
     diceBox.position = diceBoxPositions[whoPlays - 1];
 
-    redPlayerPieces[0].position = Vector2(size.x / 4.55, -size.x / 3.2);
-    redPlayerPieces[1].position = Vector2(size.x / 3.55, -size.x / 2.7);
-    redPlayerPieces[2].position = Vector2(size.x / 2.9, -size.x / 3.2);
-    redPlayerPieces[3].position = Vector2(size.x / 3.55, -size.x / 4);
+    for (var i = 0; i < 4; i++) {
+      redPlayerPieces[i].size =
+          Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
+      redPlayerPieces[i].position = Vector2(
+        size.x / scale[i].x,
+        -size.x / scale[i].y,
+      );
+      bluePlayerPieces[i].size =
+          Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
+      bluePlayerPieces[i].position = Vector2(
+        size.x / scale[i].x,
+        size.x / scale[i].y,
+      );
+      yellowPlayerPieces[i].size =
+          Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
+      yellowPlayerPieces[i].position = Vector2(
+        -size.x / scale[i].x,
+        size.x / scale[i].y,
+      );
+      greenPlayerPieces[i].size =
+          Vector2(size.x / piecesScale.x, size.x / piecesScale.y);
+      greenPlayerPieces[i].position = Vector2(
+        -size.x / scale[i].x,
+        -size.x / scale[i].y,
+      );
+    }
 
-    bluePlayerPieces[0].position = Vector2(size.x / 3.5, size.x / 5);
-    bluePlayerPieces[1].position = Vector2(size.x / 2.9, size.x / 4);
-    bluePlayerPieces[2].position = Vector2(size.x / 3.5, size.x / 3.2);
-    bluePlayerPieces[3].position = Vector2(size.x / 4.5, size.x / 4);
+    //animatePiece(redPlayerPieces[0], redPlayerPieces[0].position);
+  }
 
-    yellowPlayerPieces[0].position = Vector2(-size.x / 4.5, size.x / 4);
-    yellowPlayerPieces[1].position = Vector2(-size.x / 3.5, size.x / 3.2);
-    yellowPlayerPieces[2].position = Vector2(-size.x / 2.9, size.x / 4);
-    yellowPlayerPieces[3].position = Vector2(-size.x / 3.5, size.x / 5);
-
-    greenPlayerPieces[0].position = Vector2(-size.x / 4.5, -size.x / 3.3);
-    greenPlayerPieces[1].position = Vector2(-size.x / 3.5, -size.x / 2.7);
-    greenPlayerPieces[2].position = Vector2(-size.x / 2.9, -size.x / 3.3);
-    greenPlayerPieces[3].position = Vector2(-size.x / 3.5, -size.x / 4.2);
+  void animatePiece(Piece piece, Vector2 position) {
+    selectedPieceEffect = PieceEffect(
+      Vector2(piece.position[0], piece.position[1] - 10),
+    ).selectionEffect();
+    piece.add(
+      selectedPieceEffect,
+    );
   }
 
   void rollDice() {
-    diceText.text = (random.nextInt(possibleDiceValues) + 1).toString();
-    changePlayer();
+    if (passToNextPlayer) {
+      changePlayer();
+      diceBox.paint = Paint()..color = diceFreeColor;
+      passToNextPlayer = false;
+    } else {
+      simulateRollAnimation();
+      int rollResult = random.nextInt(possibleDiceValues) + 1;
+      diceText.text = (rollResult).toString();
+      if (rollResult == 6) {
+        isFirstMoveDone = true;
+      } else {
+        if (!isFirstMoveDone) {
+          rollCont++;
+        }
+      }
+      if (rollCont == 2) {
+        passToNextPlayer = true;
+        rollCont = 0;
+      }
+      if (passToNextPlayer) {
+        diceBox.paint = Paint()..color = Colors.red;
+      }
+    }
   }
 
   void changePlayer() {
@@ -250,6 +235,16 @@ class LudoWorld extends World {
       whoPlays = 1;
     }
     diceBox.position = diceBoxPositions[whoPlays - 1];
+  }
+
+  void movePiece(Piece piece) {}
+
+  void simulateRollAnimation() {
+    for (var i = 0; i < 10; i++) {
+      Future.delayed(Duration(milliseconds: 50 * i), () {
+        diceText.text = (random.nextInt(possibleDiceValues) + 1).toString();
+      });
+    }
   }
 }
 
