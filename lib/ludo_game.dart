@@ -99,7 +99,7 @@ class LudoWorld extends World {
   int rollCont = 0;
   bool passToNextPlayer = false;
   Color diceFreeColor = const Color.fromARGB(255, 165, 248, 171);
-  Color diceNotFreeColor = Color.fromARGB(255, 221, 114, 14);
+  Color diceNotFreeColor = const Color.fromARGB(255, 221, 114, 14);
   List<int> currentResults = <int>[];
   bool isFirstSix = false;
   int rollResult = 0;
@@ -199,6 +199,10 @@ class LudoWorld extends World {
     }
   }
 
+  void unAnimatePiece(Piece piece) {
+    piece.remove(selectedPieceEffect);
+  }
+
   void animatePiece(Piece piece, Vector2 position) {
     selectedPieceEffect = PieceEffect(
       Vector2(piece.position[0], piece.position[1] - 10),
@@ -258,6 +262,7 @@ class LudoWorld extends World {
   void enterTheMainRules(int rollResult) {
     if (rollResult == 6) {
       isFirstSix = true;
+      countForCurrentPlayer();
     } else {
       canPlay = false;
       countForCurrentPlayer();
@@ -271,6 +276,10 @@ class LudoWorld extends World {
   void countForCurrentPlayer() {
     for (var piece in playersMap[whoPlays]!) {
       if (isPieceCanPlay(piece)) {
+        try {
+          unAnimatePiece(piece);
+          // ignore: empty_catches
+        } catch (e) {}
         animatePiece(piece, piece.position);
       }
     }
